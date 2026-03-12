@@ -25,6 +25,20 @@ import {
   Sparkles
 } from 'lucide-react';
 
+const Whatsapp = ({ size = 24, className = "", ...props }: any) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+    {...props}
+  >
+    <path d="M17.498 14.382c-.301-.15-1.767-.867-2.04-.966-.273-.101-.473-.15-.673.15-.197.295-.771.964-.944 1.162-.175.195-.349.21-.646.06-.297-.15-1.265-.462-2.406-1.485-.888-.795-1.484-1.77-1.66-2.07-.174-.3-.019-.465.13-.615.136-.135.301-.345.451-.523.146-.181.194-.301.297-.496.098-.202.049-.382-.029-.533-.071-.15-.671-1.62-.921-2.216-.24-.579-.482-.501-.673-.51l-.573-.009c-.198 0-.52.074-.792.372-.272.295-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.195 2.095 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+  </svg>
+);
+
 const ICON_MAP: Record<string, any> = {
   Instagram,
   Github,
@@ -43,7 +57,30 @@ const ICON_MAP: Record<string, any> = {
   Camera,
   Scale,
   Dumbbell,
-  Sparkles
+  Sparkles,
+  Whatsapp
+};
+
+const ICON_COLORS: Record<string, string> = {
+  Instagram: 'from-[#833ab4] via-[#fd1d1d] to-[#fcb045]',
+  Github: 'from-zinc-700 to-zinc-900',
+  Linkedin: 'from-[#0077b5] to-[#00a0dc]',
+  Twitter: 'from-[#1da1f2] to-[#1da1f2]',
+  Youtube: 'from-[#ff0000] to-[#cc0000]',
+  Facebook: 'from-[#1877f2] to-[#1877f2]',
+  Music2: 'from-[#1db954] to-[#1ed760]',
+  Mail: 'from-red-500 to-pink-600',
+  Phone: 'from-[#25d366] to-[#128c7e]',
+  Globe: 'from-blue-500 to-indigo-600',
+  MessageCircle: 'from-[#25d366] to-[#128c7e]',
+  Briefcase: 'from-amber-600 to-orange-700',
+  Zap: 'from-yellow-400 to-orange-500',
+  ShoppingCart: 'from-emerald-500 to-teal-600',
+  Camera: 'from-purple-500 to-pink-600',
+  Scale: 'from-slate-600 to-slate-800',
+  Dumbbell: 'from-orange-500 to-red-600',
+  Sparkles: 'from-amber-300 to-yellow-500',
+  Whatsapp: 'from-[#25d366] to-[#128c7e]'
 };
 
 const DEFAULT_PROFILE = {
@@ -64,7 +101,7 @@ const getIconForUrl = (url: string) => {
   if (lowerUrl.includes('facebook.com')) return 'Facebook';
   if (lowerUrl.includes('spotify.com') || lowerUrl.includes('music.apple.com')) return 'Music2';
   if (lowerUrl.includes('mailto:')) return 'Mail';
-  if (lowerUrl.includes('tel:') || lowerUrl.includes('wa.me')) return 'Phone';
+  if (lowerUrl.includes('tel:') || lowerUrl.includes('wa.me') || lowerUrl.includes('whatsapp.com')) return 'Whatsapp';
   return 'Globe';
 };
 
@@ -279,6 +316,8 @@ export default function BioPage() {
           
           {links.map((link, index) => {
             const Icon = ICON_MAP[link.icon || 'Globe'] || Globe;
+            const iconColor = ICON_COLORS[link.icon || 'Globe'] || 'from-zinc-700 to-zinc-900';
+            
             return (
               <motion.button
                 key={link.id}
@@ -290,10 +329,10 @@ export default function BioPage() {
               >
                 <div className="relative z-10 w-full flex items-center justify-between p-3">
                   <div className="flex items-center space-x-4">
-                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-white bg-gradient-to-br ${link.color || 'from-zinc-700 to-zinc-900'} shadow-lg group-hover:scale-110 transition-transform duration-500`}>
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-white bg-gradient-to-br ${iconColor} shadow-lg group-hover:scale-110 transition-transform duration-500`}>
                       <Icon size={20} strokeWidth={2} />
                     </div>
-                    <span className="font-bold text-sm tracking-tight text-zinc-200 group-hover:text-white transition-colors">{link.label}</span>
+                    <span className="font-bold text-sm tracking-tight text-zinc-200 group-hover:text-white transition-colors">{link.title || link.label || 'Link'}</span>
                   </div>
                   <div className="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-all duration-500">
                     <ArrowUpRight size={14} className="transition-transform duration-500 group-hover:rotate-45" />

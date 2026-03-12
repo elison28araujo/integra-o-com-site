@@ -15,102 +15,109 @@ import {
 } from 'lucide-react';
 
 const PROFILE = {
-  id: 'elison-profile-id',
+  id: null, // No longer using a non-UUID placeholder
   name: 'Elison Araújo',
-  slug: 'elisonaraujo',
-  bio: 'Especialista em Desenvolvimento Full-Stack & Design de Interfaces Premium. Transformando ideias em produtos digitais de alto impacto.',
-  avatar_url: 'https://picsum.photos/seed/elison/200/200',
-  background_url: 'https://picsum.photos/seed/premium/1920/1080?blur=10',
+  slug: 'elisons.araujo',
+  bio: '💻 Criação de Sites Profissionais\n🚀 Link profissional para Instagram\n⚙️ Sistemas e automações para empresas',
+  avatar_url: 'https://picsum.photos/seed/elison-premium/400/400',
+  background_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1920&auto=format&fit=crop',
+  instagram: 'https://www.instagram.com/elisons.araujo',
 };
 
 const LINKS = [
   {
     id: 'whatsapp',
-    label: 'WhatsApp Direto',
-    url: 'https://wa.me/5500000000000',
+    label: 'Falar no WhatsApp',
+    url: 'https://wa.me/5594991014378',
     icon: MessageCircle,
-    color: 'bg-[#25D366]',
+    color: 'from-[#25D366] to-[#128C7E]',
   },
   {
     id: 'instagram',
-    label: 'Instagram Oficial',
-    url: 'https://instagram.com/elison',
+    label: 'Meu Instagram',
+    url: 'https://www.instagram.com/elisons.araujo',
     icon: Instagram,
-    color: 'bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7]',
+    color: 'from-[#833ab4] via-[#fd1d1d] to-[#fcb045]',
   },
   {
-    id: 'services',
-    label: 'Conhecer Serviços',
-    url: '#services',
-    icon: Briefcase,
-    color: 'bg-zinc-800',
+    id: 'esa-play',
+    label: 'Conhecer ESA Play',
+    url: '#',
+    icon: Zap,
+    color: 'from-blue-600 to-indigo-700',
   },
   {
-    id: 'portfolio',
-    label: 'Ver Projetos',
-    url: '#portfolio',
+    id: 'create-site',
+    label: 'Criar um Site Profissional',
+    url: '#',
     icon: Globe,
-    color: 'bg-zinc-800',
+    color: 'from-emerald-500 to-teal-700',
+  },
+  {
+    id: 'projects',
+    label: 'Ver Meus Projetos',
+    url: '#',
+    icon: Briefcase,
+    color: 'from-zinc-700 to-zinc-900',
   },
 ];
 
 import { supabase } from '@/lib/supabase';
+import { Zap } from 'lucide-react';
 
 export default function BioPage() {
   const [profileId, setProfileId] = useState<string | null>(null);
 
   useEffect(() => {
     const initPage = async () => {
-      if (!supabase) return;
-
-      // 1. Fetch real profile ID from DB using slug
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('slug', PROFILE.slug)
-        .single();
-
-      const realId = profile?.id;
-      setProfileId(realId);
-
-      // 2. Track visit with real UUID if found
-      if (realId) {
-        fetch('/api/track/visit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            profile_id: realId,
-            referrer: document.referrer,
-            user_agent: navigator.userAgent,
-          }),
-        }).catch(console.error);
+      let realId: string | null = null;
+      
+      if (supabase) {
+        // Try to get real UUID from DB to avoid syntax errors if DB is strict
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('slug', PROFILE.slug) // Use the correct slug from the constant
+          .single();
+        
+        if (profile?.id) {
+          realId = profile.id;
+          setProfileId(realId);
+        }
       }
 
-      // 3. Setup Presence
-      const channel = supabase.channel('online-users', {
-        config: {
-          presence: {
-            key: realId || PROFILE.slug,
-          },
-        },
-      });
-      
-      channel
-        .on('presence', { event: 'sync' }, () => {
-          // No action needed on client side for sync
-        })
-        .subscribe(async (status) => {
-          if (status === 'SUBSCRIBED') {
-            await channel.track({
-              online_at: new Date().toISOString(),
-              device: /iPhone|Android/.test(navigator.userAgent) ? 'Mobile' : 'Desktop'
-            });
-          }
-        });
+      // Track visit - only if we have a realId or we send null
+      // The API handles null by inserting null into the UUID column
+      fetch('/api/track/visit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profile_id: realId,
+          page_url: window.location.href,
+          referrer: document.referrer,
+          user_agent: navigator.userAgent,
+        }),
+      }).catch(console.error);
 
-      return () => {
-        channel.unsubscribe();
-      };
+      // Setup Presence
+      if (supabase) {
+        const channel = supabase.channel('online-users', {
+          config: { presence: { key: realId || PROFILE.slug } },
+        });
+        
+        channel
+          .on('presence', { event: 'sync' }, () => {})
+          .subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+              await channel.track({
+                online_at: new Date().toISOString(),
+                device: /iPhone|Android/.test(navigator.userAgent) ? 'Mobile' : 'Desktop'
+              });
+            }
+          });
+
+        return () => { channel.unsubscribe(); };
+      }
     };
 
     initPage();
@@ -125,6 +132,8 @@ export default function BioPage() {
         body: JSON.stringify({
           profile_id: profileId,
           link_id: link.id,
+          destination: link.url,
+          page_url: window.location.href,
           referrer: document.referrer,
           user_agent: navigator.userAgent,
         }),
@@ -137,76 +146,95 @@ export default function BioPage() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white selection:bg-white selection:text-black font-sans overflow-x-hidden relative">
+    <main className="min-h-screen bg-[#050505] text-white selection:bg-white selection:text-black font-sans overflow-x-hidden relative">
       {/* Background with subtle gradient and blur */}
       <div className="fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/80 to-black z-10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-black z-10" />
         <Image
           src={PROFILE.background_url}
           alt="Background"
           fill
-          className="object-cover opacity-50 scale-105"
+          className="object-cover opacity-40 scale-110 blur-[2px]"
           priority
           referrerPolicy="no-referrer"
         />
+        {/* Animated ambient light */}
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/10 rounded-full blur-[120px] animate-pulse" />
       </div>
 
-      <div className="relative z-10 max-w-xl mx-auto px-6 pt-20 pb-24 flex flex-col items-center">
+      <div className="relative z-10 max-w-xl mx-auto px-6 pt-16 pb-24 flex flex-col items-center">
         {/* Profile Section */}
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="flex flex-col items-center text-center space-y-6 mb-12"
+          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+          className="flex flex-col items-center text-center space-y-8 mb-16"
         >
           <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-zinc-800 to-zinc-500 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
-            <div className="relative w-32 h-32 rounded-full overflow-hidden border-2 border-white/10 shadow-2xl">
-              <Image
-                src={PROFILE.avatar_url}
-                alt={PROFILE.name}
-                fill
-                className="object-cover"
-                referrerPolicy="no-referrer"
-              />
+            <div className="absolute -inset-2 bg-gradient-to-r from-white/20 to-white/5 rounded-full blur-xl opacity-50 group-hover:opacity-100 transition duration-1000" />
+            <div className="relative w-36 h-36 rounded-full p-[2px] bg-gradient-to-b from-white/20 to-transparent">
+              <div className="w-full h-full rounded-full overflow-hidden border border-white/10 shadow-2xl relative">
+                <Image
+                  src={PROFILE.avatar_url}
+                  alt={PROFILE.name}
+                  fill
+                  className="object-cover transition-transform duration-700 group-hover:scale-110"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+            </div>
+            {/* Verified Badge */}
+            <div className="absolute bottom-2 right-2 bg-blue-500 rounded-full p-1 border-2 border-black shadow-lg">
+              <Zap size={12} fill="white" className="text-white" />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <h1 className="text-4xl font-light tracking-tight sm:text-5xl">
+          <div className="space-y-3">
+            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
               {PROFILE.name}
             </h1>
-            <p className="text-zinc-400 font-mono text-xs tracking-[0.3em] uppercase">
-              @{PROFILE.slug}
-            </p>
+            <div className="inline-flex items-center px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
+              <p className="text-zinc-400 font-mono text-[10px] tracking-[0.2em] uppercase">
+                {PROFILE.slug}
+              </p>
+            </div>
           </div>
 
-          <p className="text-zinc-300 leading-relaxed max-w-sm text-lg font-light">
-            {PROFILE.bio}
-          </p>
+          <div className="space-y-2 max-w-sm">
+            {PROFILE.bio.split('\n').map((line, i) => (
+              <p key={i} className="text-zinc-400 text-sm font-medium tracking-wide">
+                {line}
+              </p>
+            ))}
+          </div>
         </motion.div>
 
         {/* Links Section */}
-        <div className="w-full space-y-4">
+        <div className="w-full space-y-5">
           {LINKS.map((link, index) => (
             <motion.button
               key={link.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 * index, duration: 0.5 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 + (0.1 * index), duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
               onClick={() => handleLinkClick(link)}
-              className="group relative w-full flex items-center justify-between p-5 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-2xl hover:bg-white hover:text-black transition-all duration-500 ease-out overflow-hidden"
+              className="group relative w-full flex items-center p-1 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl hover:border-white/30 transition-all duration-500 ease-out overflow-hidden shadow-lg hover:shadow-white/5"
             >
-              <div className="flex items-center space-x-4 relative z-10">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white ${link.color} group-hover:scale-110 transition-transform duration-300`}>
-                  <link.icon size={20} />
+              <div className="relative z-10 w-full flex items-center justify-between p-4">
+                <div className="flex items-center space-x-4">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white bg-gradient-to-br ${link.color} shadow-lg group-hover:scale-110 transition-transform duration-500`}>
+                    <link.icon size={22} strokeWidth={1.5} />
+                  </div>
+                  <span className="font-semibold text-base tracking-tight text-zinc-200 group-hover:text-white transition-colors">{link.label}</span>
                 </div>
-                <span className="font-medium text-lg tracking-tight">{link.label}</span>
+                <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white group-hover:text-black transition-all duration-500">
+                  <ArrowUpRight size={18} className="transition-transform duration-500 group-hover:rotate-45" />
+                </div>
               </div>
-              <ArrowUpRight size={20} className="text-zinc-500 group-hover:text-black transition-colors relative z-10" />
               
-              {/* Hover background effect */}
-              <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out z-0" />
+              {/* Subtle hover glow */}
+              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/[0.03] to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-in-out" />
             </motion.button>
           ))}
         </div>
@@ -215,18 +243,23 @@ export default function BioPage() {
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="mt-16 flex items-center space-x-8 text-zinc-500"
+          transition={{ delay: 1 }}
+          className="mt-20 flex flex-col items-center space-y-8"
         >
-          <a href="#" className="hover:text-white transition-colors duration-300"><Instagram size={22} /></a>
-          <a href="#" className="hover:text-white transition-colors duration-300"><Linkedin size={22} /></a>
-          <a href="#" className="hover:text-white transition-colors duration-300"><Github size={22} /></a>
-          <a href="#" className="hover:text-white transition-colors duration-300"><Twitter size={22} /></a>
-        </motion.div>
+          <div className="flex items-center space-x-8 text-zinc-500">
+            <a href={PROFILE.instagram} target="_blank" className="hover:text-white transition-all duration-300 hover:scale-110"><Instagram size={20} /></a>
+            <a href="#" className="hover:text-white transition-all duration-300 hover:scale-110"><Linkedin size={20} /></a>
+            <a href="#" className="hover:text-white transition-all duration-300 hover:scale-110"><Github size={20} /></a>
+            <a href="#" className="hover:text-white transition-all duration-300 hover:scale-110"><Twitter size={20} /></a>
+          </div>
 
-        <div className="mt-24 text-zinc-700 text-[10px] uppercase tracking-[0.4em] font-mono">
-          Elison Bio Analytics &copy; 2026
-        </div>
+          <div className="flex flex-col items-center space-y-2">
+            <div className="h-px w-12 bg-gradient-to-r from-transparent via-zinc-800 to-transparent" />
+            <p className="text-zinc-700 text-[9px] uppercase tracking-[0.5em] font-mono">
+              Elison Bio Analytics &copy; 2026
+            </p>
+          </div>
+        </motion.div>
       </div>
     </main>
   );

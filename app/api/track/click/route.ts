@@ -5,6 +5,11 @@ export async function POST(request: Request) {
   try {
     const { profile_id, link_id, referrer, user_agent } = await request.json();
     
+    // Validate UUID format to prevent Supabase errors
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const validProfileId = profile_id && uuidRegex.test(profile_id) ? profile_id : null;
+    const validLinkId = link_id && uuidRegex.test(link_id) ? link_id : null;
+
     const supabase = getSupabaseAdmin();
     if (!supabase) {
       return NextResponse.json({ success: false, message: 'Database not configured' });
@@ -14,8 +19,8 @@ export async function POST(request: Request) {
       .from('clicks')
       .insert([
         { 
-          profile_id: profile_id || null, 
-          link_id: link_id || null,
+          profile_id: validProfileId, 
+          link_id: validLinkId,
           referrer, 
           user_agent 
         },

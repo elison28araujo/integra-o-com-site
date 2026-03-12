@@ -1085,7 +1085,7 @@ export default function AdminDashboard() {
               <Zap size={14} />
             </div>
             <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-[0.5em]">
-              Elison Bio Analytics &copy; 2026 • v2.4.0-stable
+              Desenvolvido Elison Araujo - Analytics - 2026 • v2.4.0-stable
             </p>
           </div>
         </footer>
